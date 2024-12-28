@@ -1,4 +1,5 @@
-const { db, createCollection } = require("./db-service");
+const log = require('../util/log');
+const { db, createCollection } = require('./db-service');
 
 let instance = null;
 const init = async () => {
@@ -6,7 +7,8 @@ const init = async () => {
     return instance;
   }
   const dbClient = db();
-  await createCollection("users");
+  const test = null;
+  await createCollection('users');
 
   const createUser = async (user) => {
     const createdUser = await dbClient.insertOne(user);
@@ -22,6 +24,7 @@ const init = async () => {
     createUser,
     listUsers,
   };
+  log.info('User service initialized');
   return instance;
 };
 const shutdown = async () => {
