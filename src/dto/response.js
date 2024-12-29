@@ -1,14 +1,20 @@
-const body = (body, error) => {
-  let success = !!error;
-  let data = body;
-  let errors = is;
+const { isArray } = require('lodash');
+
+const response = (body, error, custom) => {
+  const success = !error;
+  const data = body;
+  const errors = error ? (isArray(error) ? error : [error]) : [];
 
   return {
     success,
     data,
     errors,
+    ...custom,
   };
 };
+
+const listResponse = (body, filter) => response(body, null, { filter });
+const errorBody = (body) => response(null, body);
 
 const status = {
   OK: 200,
@@ -27,6 +33,8 @@ const status = {
 };
 
 module.exports = {
-  body,
+  response,
+  listResponse,
+  errorBody,
   status,
 };

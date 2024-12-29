@@ -1,32 +1,36 @@
-const log = require('../util/log');
-const { db, createCollection } = require('./db-service');
+const { collection, toDto, toDtoBulk } = require('./db-service');
+const { log } = require('../util/log');
+const { DateTime } = require('luxon');
 
-let instance = null;
+let dbClient = null;
+
 const init = async () => {
-  if (instance) {
-    return instance;
-  }
-  const dbClient = db();
-  const test = null;
-  await createCollection('users');
-
-  const createUser = async (user) => {
-    const createdUser = await dbClient.insertOne(user);
-    return createdUser;
-  };
-
-  const listUsers = async () => {
-    const users = await dbClient.find();
-    return users;
-  };
-
-  instance = {
-    createUser,
-    listUsers,
-  };
+  dbClient = collection('users');
   log.info('User service initialized');
-  return instance;
 };
+
+const createUser = async (user) => {
+  const createdAt = DateTime.now().toJSDate();
+  user.createdAt = createdAt;
+  const { insertedId } = await dbClient.insertOne(user);
+  const createdUser = await dbClient.findOne(
+    { _id: insertedId },
+    { projection: { password: 0 } },
+  );
+  return toDto(createdUser);
+};
+
+const listUsers = async (filter, sortBy, sortOrder, offset, limit) => {
+  const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+  const users = await dbClient
+    .find({}, { projection: { password: 0 } })
+    .sort(sort)
+    .skip(offset)
+    .limit(limit)
+    .toArray();
+  return toDtoBulk(users);
+};
+
 const shutdown = async () => {
   instance = null;
 };
@@ -34,5 +38,6 @@ const shutdown = async () => {
 module.exports = {
   init,
   shutdown,
-  userService: instance,
+  createUser,
+  listUsers,
 };

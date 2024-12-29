@@ -1,39 +1,65 @@
 const { MongoClient } = require('mongodb');
-const log = require('../util/log');
+const { log } = require('../util/log');
 
 let client = null;
+let instance = null;
 
+/**
+ * Initializes the database connection.
+ * @returns {Promise<void>} A promise that resolves when the connection is initialized.
+ */
 const init = async () => {
   client = new MongoClient(
     process.env.MONGO_URL + '/' + process.env.MONGO_DB_USER_SERVICE,
   );
-  await client.connect();
+  instance = client.db(process.env.MONGO_DB_USER_SERVICE);
   log.info('DB connection initialized');
 };
-const createCollection = async (name) => {
-  const db = await client.db(process.env.MONGO_DB_USER_SERVICE);
-  const collections = await db.listCollections().toArray();
-  const collectionNames = collections.map((collection) => collection.name);
 
-  if (!collectionNames.includes(name)) {
-    await db.createCollection(name);
-    log.info(`Collection '${name}' created`);
+/**
+ * Retrieves a collection by name.
+ * @param {string} name - The name of the collection to retrieve.
+ * @returns {import('mongodb').Collection} The MongoDB collection instance.
+ */
+const collection = (name) => {
+  if (!instance) {
+    throw new Error('DB instance not initialized. Call init() first.');
   }
+  return instance.collection(name);
 };
-const db = () => {
-  if (!client) {
-    throw new Error('DB client not initialized');
-  }
-  return client;
-};
+
+/**
+ * Shuts down the database connection.
+ * @returns {Promise<void>} A promise that resolves when the connection is closed.
+ */
 const shutdown = async () => {
-  await client.close();
-  log.info('DB connection closed');
+  if (client) {
+    await client.close();
+    log.info('DB connection closed');
+  }
+};
+
+const toDto = (document) => {
+  if (!document) return null;
+  const { _id, ...rest } = document;
+  return { id: _id, ...rest };
+};
+
+const toDtoBulk = (documents) => {
+  if (!documents) return [];
+  return documents.map(toDto);
+};
+
+const toEntity = (document) => {
+  const { id, ...rest } = document;
+  return { _id: id, ...rest };
 };
 
 module.exports = {
   init,
   shutdown,
-  db,
-  createCollection,
+  collection,
+  toDto,
+  toDtoBulk,
+  toEntity,
 };

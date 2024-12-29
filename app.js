@@ -2,9 +2,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const morgan = require('morgan');
-const log = require('./src/util/log');
-
+const errorHandler = require('./src/util/error-middleware');
+const { log, httpLogger } = require('./src/util/log');
 const { init: initRoutes } = require('./src/routes');
 const {
   init: initServices,
@@ -13,12 +12,13 @@ const {
 initServices();
 
 const app = express();
-
-app.use(morgan('dev'));
+app.use(httpLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 initRoutes(app);
+
+app.use(errorHandler);
 
 const server = app.listen(process.env.PORT, () => {
   log.info(`App listening on port ${process.env.PORT}`);

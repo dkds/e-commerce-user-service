@@ -1,15 +1,10 @@
 const init = async () => {
-  await Promise.all([
-    require('./db-service').init(),
-    require('./user-service').init(),
-  ]);
+  await require('./db-service').init();
+  await require('./user-service').init();
 };
 const shutdown = async () => {
-  const test = null;
-  await Promise.all([
-    require('./user-service').shutdown(),
-    require('./db-service').shutdown(),
-  ]);
+  await require('./db-service').shutdown();
+  await require('./user-service').shutdown();
 };
 
 module.exports = { init, shutdown };
